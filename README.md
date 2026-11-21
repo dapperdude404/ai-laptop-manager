@@ -1,6 +1,6 @@
 # AI Laptop Manager v1.0 — Windows PC Care
 
-A **working local desktop application** for Windows 10/11, designed around the Dell G3 3500 screenshots. This is a rules-based diagnostic utility, **not an AI agent** and not an antivirus. It makes no network requests and does not access ChatGPT.
+A **local desktop application (initial release; not yet validated on your Dell laptop)** for Windows 10/11, designed around the Dell G3 3500 screenshots. This is a rules-based diagnostic utility, **not an AI agent** and not an antivirus. It makes no network requests and does not access ChatGPT.
 
 ## Features
 
@@ -22,7 +22,7 @@ A **working local desktop application** for Windows 10/11, designed around the D
 
 **Important:** Moving files to Recycle Bin does *not* free up space until you inspect and empty Recycle Bin manually in Windows. Some files may be in use and cannot be recycled. Do not delete anything you need.
 
-If the launcher closes unexpectedly, run `Run_Debug.bat` to see the error. `APP_PREVIEW.png` is an illustrative GUI screenshot from a test environment, not measurements from your Dell.
+If the launcher closes unexpectedly, run `Run_Debug.bat` to see the error. Actual system measurements will appear only when the application runs locally on your PC.
 
 ## Build a Windows EXE
 
@@ -38,7 +38,7 @@ From a Python environment with dependencies installed:
 python -m unittest discover -s tests -v
 ```
 
-The unit tests check read-only file ranking, Temp age filtering, path restrictions and selected-file recycling authorization. They are not a substitute for testing the full GUI on Windows 11.
+The unit tests check read-only file ranking, Temp age filtering, path restrictions and selected-file recycling authorization. A Windows GitHub Actions workflow runs these tests and attempts to build the executable; neither substitutes for testing the full GUI on your Dell G3 3500.
 
 ## Safety and privacy
 
