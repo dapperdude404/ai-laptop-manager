@@ -248,8 +248,8 @@ class FutureLaptopManager(LaptopManager):
                       "Generate a Microsoft Windows File Recovery command, never silently run it.")
         bar = tk.Frame(parent, bg=BG)
         bar.pack(fill="x", padx=10)
-        self.recovery_from = tk.StringVar(value="E:")
-        self.recovery_to = tk.StringVar(value="D:")
+        self.recovery_from = tk.StringVar(value="")
+        self.recovery_to = tk.StringVar(value="")
         self.recovery_files = tk.StringVar(value="Photos + videos")
         self.recovery_mode = tk.StringVar(value="extensive")
         for caption, var, choices, width in (
