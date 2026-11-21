@@ -43,10 +43,12 @@ def _is_reparse_or_link(path):
     except OSError: return True
 
 def _strict_descendant(child,parent):
+    """Compare canonical filesystem paths, including Windows short/long forms."""
     try:
-        c=Path(os.path.abspath(child)); p=Path(os.path.abspath(parent))
+        c=Path(os.path.normcase(os.path.realpath(os.fspath(child))))
+        p=Path(os.path.normcase(os.path.realpath(os.fspath(parent))))
         return c!=p and c.is_relative_to(p)
-    except (ValueError,TypeError): return False
+    except (OSError,ValueError,TypeError): return False
 
 def largest_files(root,*,limit=100,max_files=MAX_SCAN_FILES):
     root=Path(root).expanduser().resolve(strict=True)
