@@ -1,0 +1,2 @@
+psutil>=5.9,<8
+Send2Trash>=1.8,<2
