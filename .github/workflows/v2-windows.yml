@@ -1,0 +1,28 @@
+name: Test and Build V2 Preview
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/future-tools-v2
+jobs:
+  windows-v2:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install 'pyinstaller>=6,<8'
+      - name: Run tests and compile UI
+        run: |
+          python -m unittest discover -s tests -v
+          python -m py_compile app.py maintenance.py future_core.py ai_laptop_manager_v2.py
+      - name: Build V2 Windows EXE
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name AI_Laptop_Manager_V2 ai_laptop_manager_v2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AI-Laptop-Manager-V2-Preview-Windows
+          path: dist/AI_Laptop_Manager_V2.exe

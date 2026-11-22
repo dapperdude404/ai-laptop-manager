@@ -1,0 +1,41 @@
+name: Test V2.3 USB and SSD Diagnostics
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/usb-ssd-diagnostics-v2-3
+jobs:
+  windows-v23:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install 'pyinstaller>=6,<8'
+      - name: Unit tests, entrypoint import and compilation
+        run: |
+          python -m unittest discover -s tests -v
+          python -c "import ai_laptop_manager_v2; print('V2 entrypoint import passed')"
+          python -c "from ai_laptop_manager_v2 import FutureLaptopManager; a = FutureLaptopManager(); a.update(); assert len(a.notebook.tabs()) >= 9; a.destroy(); print('V2 UI initialization passed')"
+          python -m py_compile app.py maintenance.py future_core.py ui_compat.py storage_insights.py storage_insights_gui.py cleanup_recommendations.py usb_diagnostics.py ai_laptop_manager_v2.py
+      - name: Build preview EXE
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name AI_Laptop_Manager_V2_3 ai_laptop_manager_v2.py
+      - name: Check bundled startup imports
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "$PWD\dist\AI_Laptop_Manager_V2_3.exe" -PassThru -RedirectStandardError "$PWD\exe-stderr.log"
+          Start-Sleep -Seconds 8
+          if ($p.HasExited) {
+            $log = if (Test-Path "$PWD\exe-stderr.log") { Get-Content "$PWD\exe-stderr.log" -Raw } else { "" }
+            throw "Bundled EXE exited at startup with code $($p.ExitCode). $log"
+          }
+          Stop-Process -Id $p.Id -Force
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: AI-Laptop-Manager-V2-3-Windows
+          path: dist/AI_Laptop_Manager_V2_3.exe
