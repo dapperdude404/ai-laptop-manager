@@ -12,7 +12,7 @@ from cleanup_recommendations import make_recommendations
 
 class StorageInsightsMixin:
     def add_storage_insights_tab(self):
-        from app import BG, SURFACE2, FG, MUTED, ACCENT, label, button
+        from ui_compat import BG, SURFACE2, FG, MUTED, ACCENT, label, button
         self._insights_palette = (BG, SURFACE2, FG, MUTED, ACCENT)
         page = tk.Frame(self.notebook, bg=BG)
         self.notebook.add(page, text="Storage Insights 2.1")
