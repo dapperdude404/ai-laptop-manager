@@ -20,6 +20,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -v
           python -c "import ai_laptop_manager_v2; print('V2 entrypoint import passed')"
+          python -c "from ai_laptop_manager_v2 import FutureLaptopManager; a = FutureLaptopManager(); a.update(); assert len(a.notebook.tabs()) >= 9; a.destroy(); print('V2 UI initialization passed')"
           python -m py_compile app.py maintenance.py future_core.py ui_compat.py storage_insights.py storage_insights_gui.py cleanup_recommendations.py usb_diagnostics.py ai_laptop_manager_v2.py
       - name: Build preview EXE
         run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name AI_Laptop_Manager_V2_3 ai_laptop_manager_v2.py
