@@ -3,14 +3,17 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 import subprocess
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from app import LaptopManager, BG, SURFACE, SURFACE2, FG, ACCENT, MUTED, label, button
+from app import LaptopManager
+from ui_compat import BG, SURFACE, SURFACE2, FG, ACCENT, MUTED, label, button
 from maintenance import human_bytes
 from usb_diagnostics import inventory_windows
+from auto_refresh import AutoRefreshMixin
 from future_core import (
     RECOVERY_EXTENSIONS, REPAIR_PRESETS, copy_file_no_overwrite,
     get_wallpaper, list_directory, partition_overview, recovery_plan,
@@ -21,11 +24,38 @@ from future_core import (
 from storage_insights_gui import StorageInsightsMixin
 
 
-class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
+class FutureLaptopManager(AutoRefreshMixin, StorageInsightsMixin, LaptopManager):
     """A nested tools workspace preserves all V1 features."""
+
+    def __init__(self):
+        super().__init__()
+        self.notebook = self.tabs
+        self.build()
+        self.add_auto_refresh()
+
+    def headline(self, parent, title, detail):
+        label(parent, title, size=17, bold=True).pack(anchor="w", padx=10, pady=(12, 4))
+        label(parent, detail, color=MUTED, wraplength=1000,
+              justify="left").pack(anchor="w", padx=10, pady=(0, 10))
+
+    def tree(self, parent, columns, widths):
+        area = tk.Frame(parent, bg=BG)
+        area.pack(fill="both", expand=True, pady=5)
+        widget = ttk.Treeview(area, columns=columns, show="headings")
+        for col, width in zip(columns, widths):
+            widget.heading(col, text=col)
+            widget.column(col, width=width, minwidth=75, stretch=col == columns[-1])
+        bar = ttk.Scrollbar(area, orient="vertical", command=widget.yview)
+        widget.configure(yscrollcommand=bar.set)
+        widget.pack(side="left", fill="both", expand=True)
+        bar.pack(side="right", fill="y")
+        return widget
+
+    def job(self, title, callback, on_success):
+        self.submit(title, callback, on_success)
     def build(self):
-        super().build()
-        self.title("AI Laptop Manager V2.1 Preview — Storage Insights")
+        # V1 builds its interface inside LaptopManager.__init__, not build().
+        self.title("AI Laptop Manager V2.4 Preview — Auto Refresh")
         self.geometry("1220x820")
         self.minsize(980, 650)
         parent = tk.Frame(self.notebook, bg=BG)
@@ -104,9 +134,9 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
 
     def refresh_files(self):
         root = self.folder.get()
-        self.job("List folder", lambda: list_directory(root), self.show_files)
+        self.job("List folder", lambda: list_directory(root), self.show_directory_files)
 
-    def show_files(self, result):
+    def show_directory_files(self, result):
         root, items, clipped = result
         self.folder.set(root)
         self.file_tree.delete(*self.file_tree.get_children())
@@ -345,7 +375,7 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
         top = tk.Frame(parent, bg=BG)
         top.pack(fill="x", padx=10)
         button(top, "Inspect memory processes",
-               lambda: self.notebook.select(self.tabs["Processes"])).pack(side="left")
+               lambda: self.notebook.select(self.views["Processes"])).pack(side="left")
         button(top, "Open Task Manager", self.open_taskmgr).pack(side="left", padx=9)
         button(top, "Open Registry Editor (manual)", self.open_regedit).pack(side="left")
         self.note(parent, "Safeguards: no registry writes, no background cleanup, no forced termination of "
@@ -401,5 +431,35 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
             messagebox.showerror("Wallpaper error", str(exc))
 
 
+def bundled_self_test(result_file):
+    """Verify the frozen desktop can build its actual Tk window.
+
+    Explicit command-line mode for Windows CI only; performs no repair or cleanup.
+    Writes a tiny result marker to a caller-selected temporary path.
+    """
+    outcome = {"ok": False}
+    window = None
+    try:
+        window = FutureLaptopManager()
+        window.update_idletasks()
+        window.update()
+        tabs = len(window.notebook.tabs())
+        if tabs < 9 or not window.auto_enabled.get():
+            raise RuntimeError("V2.4 tabs or refresh controls were not initialized")
+        outcome = {"ok": True, "tabs": tabs, "refresh_interval": window.auto_interval.get()}
+    except Exception as exc:
+        outcome = {"ok": False, "error": type(exc).__name__ + ": " + str(exc)}
+    finally:
+        if window is not None:
+            try:
+                window.destroy()
+            except Exception:
+                pass
+    Path(result_file).write_text(json.dumps(outcome), encoding="utf-8")
+    return 0 if outcome["ok"] else 1
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--self-test":
+        raise SystemExit(bundled_self_test(sys.argv[2]))
     FutureLaptopManager().mainloop()

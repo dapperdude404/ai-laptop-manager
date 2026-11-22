@@ -1,0 +1,41 @@
+name: Test V2.4 Auto Refresh
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/automatic-refresh-v2-4
+jobs:
+  windows-v24:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install 'pyinstaller>=6,<8'
+      - name: Run tests, startup and compile checks
+        run: |
+          python -m unittest discover -s tests -v
+          python -m py_compile app.py ui_compat.py auto_refresh.py ai_laptop_manager_v2.py
+          python -c "from ai_laptop_manager_v2 import FutureLaptopManager; a=FutureLaptopManager(); a.update(); assert a.auto_enabled.get(); assert a.auto_interval.get() == '30'; assert len(a.notebook.tabs()) >= 9; a.destroy(); print('GUI startup passed')"
+      - name: Build Windows Preview EXE
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name AI_Laptop_Manager_V2_4 ai_laptop_manager_v2.py
+      - name: Test actual frozen executable GUI initialization
+        shell: pwsh
+        run: |
+          $exe = Join-Path $PWD 'dist/AI_Laptop_Manager_V2_4.exe'
+          $report = Join-Path $env:RUNNER_TEMP 'v24-frozen-selftest.json'
+          $p = Start-Process -FilePath $exe -ArgumentList @('--self-test', $report) -PassThru -Wait
+          if (-not (Test-Path $report)) { throw "Frozen EXE did not produce the GUI self-test report (exit $($p.ExitCode))." }
+          $result = Get-Content $report -Raw | ConvertFrom-Json
+          if (-not $result.ok) { throw "Frozen GUI initialization failed: $($result.error)" }
+          if ($p.ExitCode -ne 0) { throw "Frozen EXE returned exit code $($p.ExitCode)." }
+          Write-Host "Frozen GUI self-test passed: $($result.tabs) tabs; refresh interval $($result.refresh_interval) seconds"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: AI-Laptop-Manager-V2-4-Windows
+          path: dist/AI_Laptop_Manager_V2_4.exe
