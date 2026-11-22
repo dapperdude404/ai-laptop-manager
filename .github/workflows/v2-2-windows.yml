@@ -1,0 +1,28 @@
+name: Test V2.2 Storage Recommendations
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/storage-recommendations-v2-2
+jobs:
+  windows-v22:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install 'pyinstaller>=6,<8'
+      - name: Test and compile
+        run: |
+          python -m unittest discover -s tests -v
+          python -m py_compile app.py maintenance.py future_core.py storage_insights.py storage_insights_gui.py cleanup_recommendations.py ai_laptop_manager_v2.py
+      - name: Build Windows executable
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name AI_Laptop_Manager_V2_2 ai_laptop_manager_v2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AI-Laptop-Manager-V2-2-Windows
+          path: dist/AI_Laptop_Manager_V2_2.exe
