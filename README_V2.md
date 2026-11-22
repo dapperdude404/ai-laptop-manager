@@ -28,3 +28,12 @@ Install `requirements.txt` dependencies using Python 3.10+; run `python -m unitt
 ## Status
 
 Initial code and unit tests are under review; no actual file-recovery success, SSD SMART diagnosis, registry repair or data recovery has been validated on the user's laptop. Local-first and no telemetry by default.
+
+
+## V2.1 storage analyzer (development preview)
+
+New **Storage Insights 2.1** tab: opt-in, cancellable read-only scans of a selected folder (including C:\), ranked top-level logical folder sizes and largest files, plus SHA-256 verified duplicate *previews*. It does **not** delete, move, quarantine or modify files, alter registry keys or change drive partitions.
+
+Totals are logical byte lengths, not allocated NTFS space. Results can be incomplete due to Windows permissions, symlinks/junctions, scan limits, cancellation, compressed/sparse data, hard links and NTFS metadata. A duplicate match is never permission to delete a file. Do not run intensive scans against a failing drive or on a valuable data-recovery source before imaging/preserving it.
+
+Dev checks: python -m unittest discover -s tests -v; then validate Windows GUI and removable media in a test environment before release.

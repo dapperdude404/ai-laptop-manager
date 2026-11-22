@@ -17,11 +17,14 @@ from future_core import (
 )
 
 
-class FutureLaptopManager(LaptopManager):
+from storage_insights_gui import StorageInsightsMixin
+
+
+class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
     """A nested tools workspace preserves all V1 features."""
     def build(self):
         super().build()
-        self.title("AI Laptop Manager V2 Preview — Future Tools")
+        self.title("AI Laptop Manager V2.1 Preview — Storage Insights")
         self.geometry("1220x820")
         self.minsize(980, 650)
         parent = tk.Frame(self.notebook, bg=BG)
@@ -39,6 +42,7 @@ class FutureLaptopManager(LaptopManager):
             pane = tk.Frame(self.future, bg=BG)
             self.future.add(pane, text=name)
             build(pane)
+        self.add_storage_insights_tab()
 
     def note(self, parent, value):
         label(parent, value, color=MUTED, wraplength=1070, justify="left").pack(
