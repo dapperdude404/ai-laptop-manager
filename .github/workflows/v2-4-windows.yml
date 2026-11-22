@@ -23,15 +23,17 @@ jobs:
           python -c "from ai_laptop_manager_v2 import FutureLaptopManager; a=FutureLaptopManager(); a.update(); assert a.auto_enabled.get(); assert a.auto_interval.get() == '30'; assert len(a.notebook.tabs()) >= 9; a.destroy(); print('GUI startup passed')"
       - name: Build Windows Preview EXE
         run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name AI_Laptop_Manager_V2_4 ai_laptop_manager_v2.py
-      - name: Bundled GUI smoke check
+      - name: Test actual frozen executable GUI initialization
         shell: pwsh
         run: |
-          $p = Start-Process -FilePath "$PWD\dist\AI_Laptop_Manager_V2_4.exe" -PassThru
-          Start-Sleep -Seconds 12
-          $p.Refresh()
-          if ($p.HasExited) { throw "Preview executable exited early with code $($p.ExitCode)." }
-          if ($p.MainWindowHandle -eq 0) { throw "No usable main window was detected." }
-          Stop-Process -Id $p.Id -Force
+          $exe = Join-Path $PWD 'dist/AI_Laptop_Manager_V2_4.exe'
+          $report = Join-Path $env:RUNNER_TEMP 'v24-frozen-selftest.json'
+          $p = Start-Process -FilePath $exe -ArgumentList @('--self-test', $report) -PassThru -Wait
+          if (-not (Test-Path $report)) { throw "Frozen EXE did not produce the GUI self-test report (exit $($p.ExitCode))." }
+          $result = Get-Content $report -Raw | ConvertFrom-Json
+          if (-not $result.ok) { throw "Frozen GUI initialization failed: $($result.error)" }
+          if ($p.ExitCode -ne 0) { throw "Frozen EXE returned exit code $($p.ExitCode)." }
+          Write-Host "Frozen GUI self-test passed: $($result.tabs) tabs; refresh interval $($result.refresh_interval) seconds"
       - uses: actions/upload-artifact@v4
         if: success()
         with:
