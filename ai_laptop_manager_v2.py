@@ -14,6 +14,7 @@ from ui_compat import BG, SURFACE, SURFACE2, FG, ACCENT, MUTED, label, button
 from maintenance import human_bytes
 from usb_diagnostics import inventory_windows
 from auto_refresh import AutoRefreshMixin
+from smart_center_gui import SmartCenterMixin
 from future_core import (
     RECOVERY_EXTENSIONS, REPAIR_PRESETS, copy_file_no_overwrite,
     get_wallpaper, list_directory, partition_overview, recovery_plan,
@@ -24,7 +25,7 @@ from future_core import (
 from storage_insights_gui import StorageInsightsMixin
 
 
-class FutureLaptopManager(AutoRefreshMixin, StorageInsightsMixin, LaptopManager):
+class FutureLaptopManager(SmartCenterMixin, AutoRefreshMixin, StorageInsightsMixin, LaptopManager):
     """A nested tools workspace preserves all V1 features."""
 
     def __init__(self):
@@ -32,6 +33,7 @@ class FutureLaptopManager(AutoRefreshMixin, StorageInsightsMixin, LaptopManager)
         self.notebook = self.tabs
         self.build()
         self.add_auto_refresh()
+        self.add_smart_center()
 
     def headline(self, parent, title, detail):
         label(parent, title, size=17, bold=True).pack(anchor="w", padx=10, pady=(12, 4))
@@ -55,7 +57,7 @@ class FutureLaptopManager(AutoRefreshMixin, StorageInsightsMixin, LaptopManager)
         self.submit(title, callback, on_success)
     def build(self):
         # V1 builds its interface inside LaptopManager.__init__, not build().
-        self.title("AI Laptop Manager V2.4 Preview — Auto Refresh")
+        self.title("AI Laptop Manager V2.5 Preview — Smart Control Center")
         self.geometry("1220x820")
         self.minsize(980, 650)
         parent = tk.Frame(self.notebook, bg=BG)
@@ -444,7 +446,7 @@ def bundled_self_test(result_file):
         window.update_idletasks()
         window.update()
         tabs = len(window.notebook.tabs())
-        if tabs < 9 or not window.auto_enabled.get():
+        if tabs < 10 or not window.auto_enabled.get() or not hasattr(window, "smart_tabs"):
             raise RuntimeError("V2.4 tabs or refresh controls were not initialized")
         outcome = {"ok": True, "tabs": tabs, "refresh_interval": window.auto_interval.get()}
     except Exception as exc:
