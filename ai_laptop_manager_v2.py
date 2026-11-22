@@ -8,7 +8,8 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from app import LaptopManager, BG, SURFACE, SURFACE2, FG, ACCENT, MUTED, label, button
+from app import LaptopManager
+from ui_compat import BG, SURFACE, SURFACE2, FG, ACCENT, MUTED, label, button
 from maintenance import human_bytes
 from usb_diagnostics import inventory_windows
 from future_core import (
@@ -23,9 +24,35 @@ from storage_insights_gui import StorageInsightsMixin
 
 class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
     """A nested tools workspace preserves all V1 features."""
+
+    def __init__(self):
+        super().__init__()
+        self.notebook = self.tabs
+        self.build()
+
+    def headline(self, parent, title, detail):
+        label(parent, title, size=17, bold=True).pack(anchor="w", padx=10, pady=(12, 4))
+        label(parent, detail, color=MUTED, wraplength=1000,
+              justify="left").pack(anchor="w", padx=10, pady=(0, 10))
+
+    def tree(self, parent, columns, widths):
+        area = tk.Frame(parent, bg=BG)
+        area.pack(fill="both", expand=True, pady=5)
+        widget = ttk.Treeview(area, columns=columns, show="headings")
+        for col, width in zip(columns, widths):
+            widget.heading(col, text=col)
+            widget.column(col, width=width, minwidth=75, stretch=col == columns[-1])
+        bar = ttk.Scrollbar(area, orient="vertical", command=widget.yview)
+        widget.configure(yscrollcommand=bar.set)
+        widget.pack(side="left", fill="both", expand=True)
+        bar.pack(side="right", fill="y")
+        return widget
+
+    def job(self, title, callback, on_success):
+        self.submit(title, callback, on_success)
     def build(self):
         super().build()
-        self.title("AI Laptop Manager V2.1 Preview — Storage Insights")
+        self.title("AI Laptop Manager V2.3 Preview — USB & SSD Diagnostics")
         self.geometry("1220x820")
         self.minsize(980, 650)
         parent = tk.Frame(self.notebook, bg=BG)
@@ -104,9 +131,9 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
 
     def refresh_files(self):
         root = self.folder.get()
-        self.job("List folder", lambda: list_directory(root), self.show_files)
+        self.job("List folder", lambda: list_directory(root), self.show_directory_files)
 
-    def show_files(self, result):
+    def show_directory_files(self, result):
         root, items, clipped = result
         self.folder.set(root)
         self.file_tree.delete(*self.file_tree.get_children())
@@ -345,7 +372,7 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
         top = tk.Frame(parent, bg=BG)
         top.pack(fill="x", padx=10)
         button(top, "Inspect memory processes",
-               lambda: self.notebook.select(self.tabs["Processes"])).pack(side="left")
+               lambda: self.notebook.select(self.views["Processes"])).pack(side="left")
         button(top, "Open Task Manager", self.open_taskmgr).pack(side="left", padx=9)
         button(top, "Open Registry Editor (manual)", self.open_regedit).pack(side="left")
         self.note(parent, "Safeguards: no registry writes, no background cleanup, no forced termination of "
