@@ -12,6 +12,7 @@ from app import LaptopManager
 from ui_compat import BG, SURFACE, SURFACE2, FG, ACCENT, MUTED, label, button
 from maintenance import human_bytes
 from usb_diagnostics import inventory_windows
+from auto_refresh import AutoRefreshMixin
 from future_core import (
     RECOVERY_EXTENSIONS, REPAIR_PRESETS, copy_file_no_overwrite,
     get_wallpaper, list_directory, partition_overview, recovery_plan,
@@ -22,13 +23,14 @@ from future_core import (
 from storage_insights_gui import StorageInsightsMixin
 
 
-class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
+class FutureLaptopManager(AutoRefreshMixin, StorageInsightsMixin, LaptopManager):
     """A nested tools workspace preserves all V1 features."""
 
     def __init__(self):
         super().__init__()
         self.notebook = self.tabs
         self.build()
+        self.add_auto_refresh()
 
     def headline(self, parent, title, detail):
         label(parent, title, size=17, bold=True).pack(anchor="w", padx=10, pady=(12, 4))
@@ -52,7 +54,7 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
         self.submit(title, callback, on_success)
     def build(self):
         # V1 builds its interface inside LaptopManager.__init__, not build().
-        self.title("AI Laptop Manager V2.3 Preview — USB & SSD Diagnostics")
+        self.title("AI Laptop Manager V2.4 Preview — Auto Refresh")
         self.geometry("1220x820")
         self.minsize(980, 650)
         parent = tk.Frame(self.notebook, bg=BG)
