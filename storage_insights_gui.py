@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from maintenance import human_bytes
 from storage_insights import scan_sizes, find_duplicates
+from cleanup_recommendations import make_recommendations
 
 class StorageInsightsMixin:
     def add_storage_insights_tab(self):
@@ -27,6 +28,7 @@ class StorageInsightsMixin:
         button(toolbar, "Scan folder", self.insights_start).pack(side="left", padx=5)
         button(toolbar, "Find duplicates", self.insights_start_duplicates).pack(side="left", padx=5)
         button(toolbar, "Cancel", self.insights_cancel_scan).pack(side="left", padx=5)
+        button(toolbar, "Review recommendations", self.insights_recommendations).pack(side="left", padx=5)
         self.insights_note = label(page,
                 "Choose C:\\ or a user folder. No scan starts automatically.",
                 color=MUTED, wraplength=1100, justify="left")
@@ -50,6 +52,7 @@ class StorageInsightsMixin:
         self.insights_events = queue.Queue()
         self.insights_stop = None
         self.insights_running = False
+        self.insights_latest_sizes = None
         self.after(200, self.insights_poll)
 
     def insights_choose(self):
@@ -119,6 +122,7 @@ class StorageInsightsMixin:
         self.insights_folders.delete(*self.insights_folders.get_children())
         self.insights_largest.delete(*self.insights_largest.get_children())
         if kind == "sizes":
+            self.insights_latest_sizes = result
             for item in result["folders"][:180]:
                 self.insights_folders.insert("", "end", values=(
                     human_bytes(item["size"]), item["files"], item["path"]))
@@ -140,3 +144,31 @@ class StorageInsightsMixin:
             self.insights_note.config(text=f"Duplicate preview {status}: "
                 f"{len(result['groups'])} verified groups; "
                 f"{human_bytes(result['hashed_bytes'])} hashed. Nothing modified.")
+
+    def insights_recommendations(self):
+        """Show read-only ranked review suggestions after a folder-size scan."""
+        if self.insights_latest_sizes is None:
+            messagebox.showinfo("Scan first", "Use Scan folder before reviewing recommendations.")
+            return
+        report = make_recommendations(self.insights_latest_sizes)
+        window = tk.Toplevel(self)
+        window.title("Storage Recommendations — Review Only")
+        window.geometry("980x600")
+        window.configure(bg=self._insights_palette[0])
+        window.transient(self)
+        window.grab_set()
+        text = tk.Text(window, wrap="word", bg=self._insights_palette[1],
+                       fg=self._insights_palette[2], font=("Consolas", 10),
+                       padx=16, pady=16)
+        text.pack(expand=True, fill="both", padx=12, pady=12)
+        status = "COMPLETE" if report["scan_complete"] else "INCOMPLETE"
+        text.insert("end", f"Scan: {status}. Unreadable entries: {report['unreadable']}\\n")
+        if not report["scan_complete"]:
+            text.insert("end", f"Reason: {report['scan_reason']}\\n")
+        text.insert("end", report["disclaimer"] + "\\n\\n")
+        for index, row in enumerate(report["folders"], 1):
+            text.insert("end", f"{index}. {row['path']}\\n"
+                               f"   Logical size: {human_bytes(row['logical_bytes'])}\\n"
+                               f"   Category: {row['category']}\\n"
+                               f"   Suggested review: {row['advice']}\\n\\n")
+        text.configure(state="disabled")
