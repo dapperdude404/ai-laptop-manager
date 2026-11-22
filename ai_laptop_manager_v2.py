@@ -51,7 +51,7 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
     def job(self, title, callback, on_success):
         self.submit(title, callback, on_success)
     def build(self):
-        super().build()
+        # V1 builds its interface inside LaptopManager.__init__, not build().
         self.title("AI Laptop Manager V2.3 Preview — USB & SSD Diagnostics")
         self.geometry("1220x820")
         self.minsize(980, 650)
