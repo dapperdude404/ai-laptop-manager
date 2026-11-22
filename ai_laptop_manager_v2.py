@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 import subprocess
 import tkinter as tk
@@ -430,5 +431,35 @@ class FutureLaptopManager(AutoRefreshMixin, StorageInsightsMixin, LaptopManager)
             messagebox.showerror("Wallpaper error", str(exc))
 
 
+def bundled_self_test(result_file):
+    """Verify the frozen desktop can build its actual Tk window.
+
+    Explicit command-line mode for Windows CI only; performs no repair or cleanup.
+    Writes a tiny result marker to a caller-selected temporary path.
+    """
+    outcome = {"ok": False}
+    window = None
+    try:
+        window = FutureLaptopManager()
+        window.update_idletasks()
+        window.update()
+        tabs = len(window.notebook.tabs())
+        if tabs < 9 or not window.auto_enabled.get():
+            raise RuntimeError("V2.4 tabs or refresh controls were not initialized")
+        outcome = {"ok": True, "tabs": tabs, "refresh_interval": window.auto_interval.get()}
+    except Exception as exc:
+        outcome = {"ok": False, "error": type(exc).__name__ + ": " + str(exc)}
+    finally:
+        if window is not None:
+            try:
+                window.destroy()
+            except Exception:
+                pass
+    Path(result_file).write_text(json.dumps(outcome), encoding="utf-8")
+    return 0 if outcome["ok"] else 1
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--self-test":
+        raise SystemExit(bundled_self_test(sys.argv[2]))
     FutureLaptopManager().mainloop()
