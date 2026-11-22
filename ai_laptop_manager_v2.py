@@ -10,6 +10,7 @@ from tkinter import ttk, filedialog, messagebox
 
 from app import LaptopManager, BG, SURFACE, SURFACE2, FG, ACCENT, MUTED, label, button
 from maintenance import human_bytes
+from usb_diagnostics import inventory_windows
 from future_core import (
     RECOVERY_EXTENSIONS, REPAIR_PRESETS, copy_file_no_overwrite,
     get_wallpaper, list_directory, partition_overview, recovery_plan,
@@ -155,6 +156,7 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
         bar = tk.Frame(parent, bg=BG)
         bar.pack(fill="x", padx=10)
         button(bar, "Refresh volumes and partitions", self.refresh_disks).pack(side="left")
+        button(bar, "Read-only USB / SSD health", self.inspect_usb_health).pack(side="left", padx=10)
         button(bar, "Browse selected drive", self.browse_drive).pack(side="left", padx=10)
         self.note(parent, "USB devices may have no drive letter or be unreadable. A 'Healthy' indicator is not a complete "
                           "SSD SMART assessment. Never format or initialize a device to recover lost files.")
@@ -183,6 +185,36 @@ class FutureLaptopManager(StorageInsightsMixin, LaptopManager):
                 human_bytes(volume["free"]), f"{volume['used_percent']:.0f}%", ptext))
             self.volume_map[row] = drive
         self.status.configure(text=f"{len(volumes)} volumes, {len(parts)} partitions. {status}")
+
+    def inspect_usb_health(self):
+        """Windows provider snapshot, not full SMART or a recovery operation."""
+        if os.name != "nt":
+            messagebox.showinfo("Windows-only", "Disk inventory requires Windows.")
+            return
+        self.job("USB / SSD health inventory", inventory_windows, self.show_usb_health)
+
+    def show_usb_health(self, result):
+        window = tk.Toplevel(self)
+        window.title("V2.3 Read-only USB / SSD Inventory")
+        window.geometry("940x650")
+        window.configure(bg=BG)
+        output = tk.Text(window, bg=SURFACE, fg=FG, wrap="word",
+                         font=("Consolas", 10), padx=14, pady=12)
+        output.pack(fill="both", expand=True, padx=12, pady=12)
+        output.insert("end", "READ-ONLY STORAGE PROVIDER SNAPSHOT\n\n")
+        for disk in result["disks"]:
+            output.insert("end", f"Disk {disk['disk_number']} — {disk['name']}\n")
+            output.insert("end", f"  Bus: {disk['bus_type']} | Provider health: {disk['health']} | "
+                                 f"Operational: {disk['operational']}\n")
+            output.insert("end", f"  Capacity: {human_bytes(disk['size_bytes']) if disk['size_bytes'] is not None else 'Unknown'}\n")
+            for p in disk["partitions"]:
+                output.insert("end", f"  Partition {p['partition']}: {p['letter'] or '(no drive letter)'}"
+                                     f" | {p['filesystem']} | {p['volume_health']}\n")
+            for warning in disk["alerts"]:
+                output.insert("end", "  WARNING: " + warning + "\n")
+            output.insert("end", "\n")
+        output.insert("end", result["limitations"] + "\nNo drives were modified.")
+        output.configure(state="disabled")
 
     def browse_drive(self):
         selection = self.drive_tree.selection()
