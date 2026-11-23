@@ -2,6 +2,13 @@
 
 A **local desktop application (initial release; not yet validated on your Dell laptop)** for Windows 10/11, designed around the Dell G3 3500 screenshots. This is a rules-based diagnostic utility, **not an AI agent** and not an antivirus. It makes no network requests and does not access ChatGPT.
 
+
+> **Quick discovery:** Local Windows PC diagnostics and user-confirmed storage-cleanup utility built with Python.
+>
+> **Start here:** [Windows setup and safeguards](#run-on-windows) · [Source](https://github.com/dapperdude404/ai-laptop-manager) · [Contribution guide](CONTRIBUTING.md) · [Report a bug](https://github.com/dapperdude404/ai-laptop-manager/issues/new?template=bug_report.yml) · [Discovery & social preview](DISCOVERY_PACK.md).
+>
+> **Scope:** Rules-based local PC utility; not autonomous AI, an antivirus or a universally validated Windows optimizer. Cleanup requires user confirmation.
+
 ## Features
 
 - **Dashboard:** CPU, RAM, battery, process count, uptime, and per-volume storage.
